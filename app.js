@@ -1,11 +1,28 @@
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
+
 app.locals.pretty = true;
 app.set('view engine', 'pug');
 app.set('views', './views');
 app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get('/topic', (req, res) => {
+app.get('/form', (req, res) => {
+    res.render('form');
+});
+app.get('/form_receiver', (req, res) => {
+    var title= req.query.title;
+    var description = req.query.description;
+    res.send(title + ',' + description);
+});
+app.post('/form_receiver', (req, res) => {
+    var title = req.body.title;
+    var description = req.body.description;
+    res.send(title + ',' + description);
+});
+
+app.get('/topic/:id', (req, res) => {
     var topics = [
         'Javascript is ...',
         'Node JS is ...',
@@ -15,9 +32,12 @@ app.get('/topic', (req, res) => {
     <a href="/topic?id=0">JavaScript</a><br>
     <a href="/topic?id=1">Node JS</a><br>
     <a href="/topic?id=2">Express</a><br><br>
-    ${topics[req.query.id]}
+    ${topics[req.params.id]}
     `;
     res.send(output);
+});
+app.get('/topic/:id/:mode', (req, res) => {
+    res.send(req.params.id + ',' + req.params.mode);
 });
 
 app.get('/template', (req, res) => {
