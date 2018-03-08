@@ -3,53 +3,46 @@ var bodyParser = require('body-parser');
 var fs = require('fs');
 var app = express();
 
+var OrientDB = require('orientjs');
+
+var server = OrientDB({
+   host:       'localhost',
+   port:       2424,
+   username:   'root',
+   password:   '426ckh'
+});
+
+var db = server.use('o2');
+console.log('Using Database : ' + db.name);
 app.locals.pretty = true;
 app.use(bodyParser.urlencoded({ extended: false }));
-app.set('views', './views_file');
+app.set('views', './views_orientdb');
 app.set('view engine', 'pug');
 
-app.get('/topic/new', (req, res) => {
+app.get('/topic/add', (req, res) => {
     fs.readdir('data', (err, files) => {
         if(err) {
             console.log(err);
             res.status(500).send('Internal Server Error');
         }
-        res.render('new', {topics:files});
+        res.render('add', {topics:files});
     });
 });
 
 app.get(['/topic', '/topic/:id'], (req, res) => {
-    var id = req.params.id;
-    fs.readdir('data', (err, files) => {
-        if(err) {
-            console.log(err);
-            res.status(500).send('Internal Server Error');
-        }
+    var sql = 'SELECT FROM topic';
+    db.query(sql).then( (topics) => {
+        var sql = 'SELECT FROM topic WHERE @rid=:rid';
         var id = req.params.id;
         if(id) {
-            // id 값이 존재할 경우
-            fs.readFile('data/' + id, 'utf8', (err, data) => {
-                if(err) {
-                    console.log(err);
-                    res.status(500).send('Internal Server Error');
-                }
-                res.render('view', {topics:files, title:id, description:data});
+            db.query(sql, {params:{rid:id}}).then( (topic) => {
+                res.render('view', {topics:topics, topic:topic[0]});
             });
         } else {
-            res.render('view', {topics:files, title:'Welcome', description:'Hello, JavaScript for Server'});
+            res.render('view', {topics:topics});
         }
     });
 });
-
-// app.get('/topic', (req, res) => {
-//     fs.readdir('data', (err, files) => {
-//         if(err) {
-//             console.log(err);
-//             res.status(500).send('Internal Server Error');
-//         }
-//         res.render('view', {topics:files});
-//     });
-// });
 
 app.post('/topic', (req, res) => {
     var title = req.body.title;
